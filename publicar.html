@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Publicar Subasta</title>
+
+<style>
+body {
+  font-family: Arial;
+  margin: 0;
+  padding: 0;
+  padding-bottom: 100px; /* 🔥 CLAVE */
+}
+.footer { position:fixed; bottom:0; width:100%; display:flex; justify-content:space-around; background:#eee; padding:10px 0; }
+.image-preview { display:inline-block; position:relative; margin:5px; }
+.image-preview img { width:100px; height:100px; object-fit:cover; }
+.image-preview .close { position:absolute; top:0; right:0; cursor:pointer; background:red; color:white; border:none; }
+</style>
+</head>
+
+<body>
+
+<h2>Publicar Subasta</h2>
+
+<form id="formSubasta" class="card">
+  <input type="text" id="titulo" placeholder="Título (máx 60)" maxlength="60" required><br><br>
+  <textarea id="descripcion" placeholder="Descripción (máx 140)" maxlength="140" required></textarea><br><br>
+
+  <select id="rubro" required>
+  <option value="">Seleccionar categoría</option>
+</select>
+
+  <input type="number" id="precio_inicial" placeholder="Precio inicial" required><br><br>
+
+  <select id="incremento_puja" required>
+    <option value="0.01">1%</option>
+    <option value="0.05">5%</option>
+    <option value="0.1">10%</option>
+  </select><br><br>
+
+  <select id="fecha_fin" required>
+    <option value="5m">5 minutos</option>
+    <option value="1d">1 día</option>
+    <option value="1w">1 semana</option>
+    <option value="1M">1 mes</option>
+  </select><br><br>
+
+  <select id="provincia" required>
+  <option value="">Seleccionar provincia</option>
+</select><br><br>
+
+  <input type="file" id="imagenes" accept="image/*" multiple><br>
+  <div id="preview"></div><br>
+
+  <button id="btnPublicar" type="button" onclick="guardarSubasta()">Crear Subasta</button>
+</form>
+
+<div class="footer">
+  <button onclick="window.location.href='home.html'">Home</button>
+  <button onclick="window.location.href='usuario.html'">Usuario</button>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+const subastaId = params.get("id"); // 👈 clave
+let modoEdicion = !!subastaId;
+
+  const provincias = [
+  "Buenos Aires","CABA","Catamarca","Chaco","Chubut","Córdoba","Corrientes",
+  "Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones",
+  "Neuquén","Río Negro","Salta","San Juan","San Luis","Santa Cruz",
+  "Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán"
+];
+
+const categorias = [
+  { value: "construccion", label: "Construcción" },
+  { value: "decoracion", label: "Decoración" },
+  { value: "deportes", label: "Deportes" },
+  { value: "electro", label: "Electro" },
+  { value: "fondo_comercio", label: "Fondo de comercio" },
+  { value: "hogar", label: "Hogar" },
+  { value: "inmuebles", label: "Inmuebles" },
+  { value: "jardin", label: "Jardín" },
+  { value: "juegos_juguetes", label: "Juegos y juguetes" },
+  { value: "liquidacion", label: "Liquidación" },
+  { value: "maquinas_herramientas", label: "Máquinas herramientas" },
+  { value: "mascotas", label: "Mascotas" },
+  { value: "mobiliario", label: "Mobiliario" },
+  { value: "moda_accesorios", label: "Moda / Accesorios" },
+  { value: "ninos_bebes", label: "Niños / Bebés" },
+  { value: "ocio", label: "Ocio" },
+  { value: "salud", label: "Salud" },
+  { value: "tecnologia", label: "Tecnología" },
+  { value: "vehiculos", label: "Vehículos" }
+];
+
+// 🔐 PROTEGER RUTA
+(function() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Tenés que iniciar sesión");
+    window.location.href = "login.html";
+  }
+})();
+
+initSelects();
+
+
+if (modoEdicion) {
+  cargarSubastaParaEditar();
+}
+
+const preview = document.getElementById("preview");
+let archivosSeleccionados = [];
+let imagenesExistentes = [];
+
+// =========================
+// PREVIEW IMÁGENES
+// =========================
+document.getElementById("imagenes").addEventListener("change", (e) => {
+
+  const nuevosArchivos = Array.from(e.target.files);
+
+  // 🚫 LIMITE DE 4 IMÁGENES
+  if (archivosSeleccionados.length + nuevosArchivos.length > 4) {
+    alert("Solo podés subir hasta 4 imágenes");
+    document.getElementById("imagenes").value = "";
+    return;
+  }
+
+  // 👉 agregar sin borrar las anteriores
+  archivosSeleccionados = archivosSeleccionados.concat(nuevosArchivos);
+
+  renderPreview();
+
+  // limpiar input (clave)
+  document.getElementById("imagenes").value = "";
+});
+
+function renderPreview() {
+  preview.innerHTML = "";
+
+  archivosSeleccionados.forEach((file, idx) => {
+    const reader = new FileReader();
+
+    reader.onload = event => {
+      const div = document.createElement("div");
+      div.classList.add("image-preview");
+
+      div.innerHTML = `
+        <img src="${event.target.result}">
+        <button class="close" onclick="eliminarImagen(${idx})">X</button>
+      `;
+
+      preview.appendChild(div);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function eliminarImagen(idx) {
+  archivosSeleccionados.splice(idx, 1);
+  renderPreview();
+}
+
+// =========================
+// SUBIR IMÁGENES (FIX ACÁ)
+// =========================
+async function subirImagenes() {
+
+  const token = localStorage.getItem("token"); // 🔥 CLAVE
+
+  const urls = [];
+
+  for (const file of archivosSeleccionados) {
+
+    const base64 = await fileToBase64(file);
+
+    const res = await fetch("http://localhost:5000/subir-imagen",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":"Bearer " + token // 🔥 FIX
+      },
+      body:JSON.stringify({
+        imagenBase64: base64,
+        nombreArchivo: Date.now() + "-" + file.name
+          .replace(/\s+/g, "_")
+          .replace(/[()]/g, "")
+          .toLowerCase()
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.url) urls.push(data.url);
+  }
+
+  return urls;
+}
+async function cargarSubastaParaEditar() {
+
+  const res = await fetch(`http://localhost:5000/subasta/${subastaId}`);
+  const subasta = await res.json();
+  imagenesExistentes = subasta.imagenes || [];
+
+  document.getElementById("titulo").value = subasta.titulo;
+  document.getElementById("descripcion").value = subasta.descripcion;
+  document.getElementById("rubro").value = subasta.rubro;
+  document.getElementById("precio_inicial").value = subasta.precio_inicial;
+  document.getElementById("incremento_puja").value = subasta.incremento_puja;
+  document.getElementById("provincia").value = subasta.provincia;
+
+  // cambiar botón
+  document.getElementById("btnPublicar").textContent = "Guardar cambios";
+
+  // ⚠️ opcional: ocultar duración en edición
+  
+
+  preview.innerHTML = "";
+
+if (Array.isArray(subasta.imagenes)) {
+  subasta.imagenes.forEach(url => {
+    const div = document.createElement("div");
+    div.classList.add("image-preview");
+
+    div.innerHTML = `<img src="${url}">`;
+
+    preview.appendChild(div);
+  });
+}
+}
+
+// =========================
+// CONVERTIR A BASE64
+// =========================
+function fileToBase64(file) {
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = e => img.src = e.target.result;
+
+    img.onload = ()=>{
+      const canvas = document.createElement("canvas");
+
+      const MAX_WIDTH = 800;
+      const scale = MAX_WIDTH / img.width;
+
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+
+      resolve(canvas.toDataURL("image/jpeg",0.7));
+    };
+
+    reader.onerror = error => reject(error);
+
+    reader.readAsDataURL(file);
+  });
+}
+
+// =========================
+// CREAR SUBASTA
+// =========================
+async function guardarSubasta() {
+
+  const token = localStorage.getItem("token");
+
+  const titulo = document.getElementById("titulo").value;
+  const descripcion = document.getElementById("descripcion").value;
+  const rubro = document.getElementById("rubro").value;
+  const precio_inicial = parseFloat(document.getElementById("precio_inicial").value);
+  const incremento_puja = parseFloat(document.getElementById("incremento_puja").value);
+  const fecha_fin = document.getElementById("fecha_fin").value;
+  const provincia = document.getElementById("provincia").value;
+
+  let imagenesURLs = await subirImagenes();
+
+// 🔥 si no sube nuevas, mantener las anteriores
+if (imagenesURLs.length === 0) {
+  imagenesURLs = imagenesExistentes;
+}
+
+  const url = modoEdicion
+    ? `http://localhost:5000/editar-subasta/${subastaId}`
+    : "http://localhost:5000/crear-subasta";
+
+  const method = modoEdicion ? "PUT" : "POST";
+
+  const res = await fetch(url,{
+    method,
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer " + token
+    },
+    body:JSON.stringify({
+      titulo,
+      descripcion,
+      rubro,
+      precio_inicial,
+      incremento_puja,
+      fecha_fin,
+      provincia,
+      imagenes: imagenesURLs
+    })
+  });
+
+  const data = await res.json();
+
+  alert(data.msg || data.error);
+
+  if(data.msg) window.location.href = "home.html";
+}
+function initSelects() {
+  const provSelect = document.getElementById("provincia");
+  const rubroSelect = document.getElementById("rubro");
+
+  // Provincias
+  provincias.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    provSelect.appendChild(opt);
+  });
+
+  // Categorías
+  categorias.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.value;
+    opt.textContent = c.label;
+    rubroSelect.appendChild(opt);
+  });
+}
+
+</script>
+
+</body>
+</html>

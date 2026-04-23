@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+h2 {
+  margin-top: 0;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📊 Panel de Control</h1>
+
+<div class="card">
+  <h2>Usuarios registrados</h2>
+  <p id="totalUsuarios">Cargando...</p>
+
+  <select id="filtroProvincia">
+  <option value="">Todas las provincias</option>
+</select>
+
+  <select id="filtroCategoria">
+  <option value="">Todas las categorías</option>
+</select>
+</div>
+
+<div class="card">
+  <h2>Subastas publicadas</h2>
+  <p id="totalSubastas">Cargando...</p>
+</div>
+
+<div class="card">
+  <h2>Usuarios</h2>
+  <div id="listaUsuarios"></div>
+</div>
+
+<div class="card">
+  <h2>Subastas</h2>
+  <div id="listaSubastas"></div>
+</div>
+
+<script>
+    const provincias = [
+  "Buenos Aires","CABA","Catamarca","Chaco","Chubut","Córdoba","Corrientes",
+  "Entre Ríos","Formosa","Jujuy","La Pampa","La Rioja","Mendoza","Misiones",
+  "Neuquén","Río Negro","Salta","San Juan","San Luis","Santa Cruz",
+  "Santa Fe","Santiago del Estero","Tierra del Fuego","Tucumán"
+];
+
+const categorias = [
+  "construccion","decoracion","deportes","electro","fondo_comercio",
+  "hogar","inmuebles","jardin","juegos_juguetes","liquidacion",
+  "maquinas_herramientas","mascotas","mobiliario","moda_accesorios",
+  "ninos_bebes","ocio","salud","tecnologia","vehiculos"
+];
+
+function initFiltros() {
+  const prov = document.getElementById("filtroProvincia");
+  const cat = document.getElementById("filtroCategoria");
+
+  provincias.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    prov.appendChild(opt);
+  });
+
+  categorias.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    cat.appendChild(opt);
+  });
+}
+
+async function cargarAdmin() {
+  const token = localStorage.getItem("token");
+
+  const provincia = document.getElementById("filtroProvincia").value;
+  const categoria = document.getElementById("filtroCategoria").value;
+
+  const res = await fetch(`http://localhost:5000/admin/stats?provincia=${provincia}&categoria=${categoria}`, {
+    headers: {
+      Authorization: "Bearer " + token
+    }
+  });
+
+  const data = await res.json();
+
+// 🔢 CONTADORES
+document.getElementById("totalUsuarios").textContent = data.usuarios;
+document.getElementById("totalSubastas").textContent = data.subastas;
+
+// =========================
+// 👤 LISTA USUARIOS
+// =========================
+const listaUsuarios = document.getElementById("listaUsuarios");
+listaUsuarios.innerHTML = "";
+
+data.listaUsuarios.forEach(u => {
+  const div = document.createElement("div");
+  div.style.borderBottom = "1px solid #ccc";
+  div.style.padding = "5px";
+
+  div.innerHTML = `
+    <strong>${u.username}</strong><br>
+    ${u.email}<br>
+    📍 ${u.provincia}
+  `;
+
+  listaUsuarios.appendChild(div);
+});
+
+// =========================
+// 📦 LISTA SUBASTAS
+// =========================
+const listaSubastas = document.getElementById("listaSubastas");
+listaSubastas.innerHTML = "";
+
+data.listaSubastas.forEach(s => {
+  const div = document.createElement("div");
+  div.style.borderBottom = "1px solid #ccc";
+  div.style.padding = "5px";
+
+  div.innerHTML = `
+    <strong>${s.titulo}</strong><br>
+    📍 ${s.provincia}<br>
+    🏷️ ${s.rubro}<br>
+    💰 $${s.precio_inicial}
+  `;
+
+  listaSubastas.appendChild(div);
+});
+}
+
+// filtros dinámicos
+document.getElementById("filtroProvincia").addEventListener("change", cargarAdmin);
+document.getElementById("filtroCategoria").addEventListener("change", cargarAdmin);
+
+// init
+
+initFiltros();
+cargarAdmin();
+
+</script>
+
+</body>
+</html>

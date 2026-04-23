@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Cuenta</title>
+
+<style>
+body {
+  font-family: Arial;
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+}
+
+.contenedor {
+  padding: 10px;
+  margin-bottom: 80px;
+}
+
+.seccion {
+  background: white;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.seccion h3 {
+  margin-top: 0;
+}
+
+.card {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  position: relative;
+}
+
+.btn-eliminar {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: transparent;
+  border: none;
+  color: red;
+  font-size: 16px;
+  cursor: pointer;
+}
+.card:hover {
+  background: #f0f8ff;
+  transform: scale(1.01);
+  transition: 0.2s;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #eee;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+.footer button {
+  flex: 1;
+  margin: 0 5px;
+  padding: 12px;
+}
+
+.card {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 6px;
+  position: relative; /* 👈 ASEGURATE QUE ESTÉ */
+}
+</style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <div class="seccion">
+  <h3>📊 Participando</h3>
+  <div id="participando"></div>
+</div>
+
+  <div class="seccion">
+    <h3>🟢 Subastas activas</h3>
+    <div id="activas"></div>
+  </div>
+
+  <div class="seccion">
+  <h3>❤️ Favoritos</h3>
+  <div id="favoritos"></div>
+</div>
+
+  <div class="seccion">
+    <h3>🏁 Subastas finalizadas</h3>
+    <div id="finalizadas"></div>
+  </div>
+
+  <div class="seccion">
+    <h3>🏆 Subastas ganadas</h3>
+    <div id="ganadas"></div>
+  </div>
+
+  <div class="seccion">
+    <h3>🔔 Notificaciones</h3>
+    <div id="notificaciones"></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <button onclick="window.location.href='home.html'">Home</button>
+  <button onclick="window.location.href='publicar.html'">Publicar</button>
+</div>
+
+<script>
+let usuario = null;
+
+
+
+
+// =========================
+// USUARIO
+// =========================
+async function cargarUsuario() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const res = await fetch("http://localhost:5000/me", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const data = await res.json();
+  console.log("DATA /me:", data);
+  usuario = data.user;
+  if (data.profile?.is_admin) {
+  const btnAdmin = document.createElement("button");
+  btnAdmin.textContent = "🛠 Panel de control";
+  btnAdmin.style.marginTop = "10px";
+  btnAdmin.style.width = "100%";
+
+  btnAdmin.onclick = () => {
+    window.location.href = "admin.html";
+  };
+
+  document.querySelector(".contenedor").prepend(btnAdmin);
+}
+}
+async function cargarFavoritos() {
+  const div = document.getElementById("favoritos");
+  div.innerHTML = "";
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch("http://localhost:5000/favorites", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const subastas = await res.json();
+    const ahora = new Date();
+
+const activas = subastas.filter(s => {
+  const fin = new Date(s.fecha_fin + "Z");
+
+  if (!s.fecha_fin || isNaN(fin)) return false; // 🔥 clave
+
+  return ahora < fin;
+});
+
+    if (!Array.isArray(activas) || activas.length === 0) {
+      div.innerHTML = "<p>No tenés favoritos</p>";
+      return;
+    }
+
+    activas.forEach(s => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.style.cursor = "pointer";
+
+      card.innerHTML = `
+        <strong>${s.titulo}</strong>
+        <p>${s.provincia}</p>
+      `;
+
+      card.addEventListener("click", () => {
+        window.location.href = `detalle.html?id=${s.id}`;
+      });
+
+      div.appendChild(card);
+    });
+
+  } catch (err) {
+    console.log("Error favoritos:", err);
+  }
+}
+
+// =========================
+// CARGAR SUBASTAS
+// =========================
+async function cargarSubastasUsuario() {
+
+  const token = localStorage.getItem("token");
+
+const res = await fetch("http://localhost:5000/subastas", {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
+
+const participandoDiv = document.getElementById("participando");
+participandoDiv.innerHTML = "";
+  const subastas = await res.json();
+
+  const activasDiv = document.getElementById("activas");
+  const finalizadasDiv = document.getElementById("finalizadas");
+  const ganadasDiv = document.getElementById("ganadas");
+
+  activasDiv.innerHTML = "";
+  finalizadasDiv.innerHTML = "";
+  ganadasDiv.innerHTML = "";
+
+  const ahora = new Date();
+
+  // =========================
+  // MIS SUBASTAS
+  // =========================
+  const misSubastas = subastas.filter(s => s.user_id === usuario.id);
+
+  for (const s of misSubastas) {
+    
+    
+
+    const inicio = new Date(s.fecha_creacion);
+    const fin = new Date(inicio.getTime() + (s.duracion || 0));
+    const finalizada = ahora > fin;
+
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.style.cursor = "pointer";
+
+    card.innerHTML = `
+  <strong>${s.titulo}</strong>
+  <p>${s.provincia}</p>
+`;
+
+const btn = document.createElement("button");
+btn.innerText = "❌";
+btn.classList.add("btn-eliminar");
+
+btn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+
+  const token = localStorage.getItem("token");
+
+  try {
+    await fetch("http://localhost:5000/ocultar-subasta", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        auction_id: s.id
+      })
+    });
+
+    card.remove();
+
+  } catch (err) {
+    console.log("Error ocultando:", err);
+  }
+});
+
+card.appendChild(btn);
+
+card.addEventListener("click", () => {
+  window.location.href = `detalle.html?id=${s.id}`;
+});
+
+    if (finalizada) {
+
+  // =========================
+  // TRAER BIDS
+  // =========================
+  let bids = [];
+
+  try {
+    const token = localStorage.getItem("token");
+
+const resBids = await fetch(`http://localhost:5000/bids?auction_id=${s.id}`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
+    const data = await resBids.json();
+    bids = Array.isArray(data) ? data : [];
+  } catch {
+    bids = [];
+  }
+
+  // =========================
+  // SIN PUJAS
+  // =========================
+  if (bids.length === 0) {
+
+  card.innerHTML = `
+    <strong>${s.titulo}</strong>
+    <p>${s.provincia}</p>
+    <p style="color:gray;">😕 No hubo ofertas</p>
+    <button onclick="event.stopPropagation(); window.location.href='publicar.html?id=${s.id}'">
+  Editar publicación
+</button>
+  `;
+   card.appendChild(btn);
+
+
+
+  } else {
+
+    // =========================
+    // CON GANADOR
+    // =========================
+    const ultima = bids.sort((a,b) => b.monto - a.monto)[0];
+
+    let nombre = "Usuario";
+let telefono = "-";
+
+if (ultima.user) {
+  nombre = ultima.user.username || "Usuario";
+  telefono = ultima.user.telefono || "-";
+} else {
+  nombre = ultima.user_id?.slice(0,6) || "Usuario";
+}
+
+    card.innerHTML = `
+  <strong>${s.titulo}</strong>
+  <p>${s.provincia}</p>
+  <p>🏆 Ganador: <strong>${nombre}</strong></p>
+  <p>📞 ${telefono}</p>
+  <p>💰 Precio final: $${ultima.monto}</p>
+`;
+card.appendChild(btn);
+  }
+
+  finalizadasDiv.appendChild(card);
+
+} else {
+  activasDiv.appendChild(card);
+}
+  }
+
+
+  // =========================
+// SUBASTAS DONDE PARTICIPO
+// =========================
+
+for (const s of subastas) {
+    
+
+  // ❌ no mostrar mis propias subastas
+  if (s.user_id === usuario.id) continue;
+  console.log("DEBUG:", s.titulo, s.fecha_fin, new Date(s.fecha_fin)); // 👈 ACA
+  console.log("AHORA:", new Date());
+  const fin = new Date(s.fecha_fin + "Z");
+if (!s.fecha_fin || isNaN(fin)) continue; // 🔥 evita datos rotos
+
+const finalizada = new Date() > fin;
+if (finalizada) continue;
+
+  let bids = [];
+
+  try {
+    const resBids = await fetch(`http://localhost:5000/bids?auction_id=${s.id}`);
+    const data = await resBids.json();
+    bids = Array.isArray(data) ? data : [];
+  } catch {
+    bids = [];
+  }
+
+  if (bids.length === 0) continue;
+
+  // 👉 ver si participé
+  const participe = bids.some(b => b.user_id === usuario.id);
+  if (!participe) continue;
+
+  // 👉 última puja
+  const ultima = bids.sort((a,b) => b.monto - a.monto)[0];
+
+  // 👉 voy ganando?
+  const voyGanando = ultima.user_id === usuario.id;
+
+  const card = document.createElement("div");
+  card.classList.add("card");
+  card.style.cursor = "pointer";
+
+card.addEventListener("click", () => {
+  window.location.href = `detalle.html?id=${s.id}`;
+});
+
+  const icono = voyGanando ? "🏆" : "⏳";
+
+  card.innerHTML += `
+    <strong>${icono} ${s.titulo}</strong>
+    <p>💰 Actual: $${ultima.monto}</p>
+    <p>${voyGanando ? "Vas ganando" : "Te superaron"}</p>
+  `;
+
+  participandoDiv.appendChild(card);
+}
+}
+
+  // =========================
+  // SUBASTAS GANADAS
+  // =========================
+ async function cargarGanadas() {
+  const div = document.getElementById("ganadas");
+  div.innerHTML = "";
+
+  const token = localStorage.getItem("token");
+
+  const res = await fetch("http://localhost:5000/mis-ganadas", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  const data = await res.json();
+
+  if (!Array.isArray(data) || data.length === 0) {
+    div.innerHTML = "<p>No ganaste ninguna subasta</p>";
+    return;
+  }
+
+  data.forEach(s => {
+    const card = document.createElement("div");
+    card.classList.add("card");
+    card.style.cursor = "pointer";
+
+    card.innerHTML = `
+      <strong>${s.titulo}</strong>
+      <p>💰 Ganaste con: $${s.monto}</p>
+      <p>👤 ${s.vendedor}</p>
+      <p>📞 ${s.telefono}</p>
+    `;
+
+    // 🔥 BOTÓN ❌
+    const btn = document.createElement("button");
+    btn.innerText = "❌";
+    btn.classList.add("btn-eliminar");
+
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      const token = localStorage.getItem("token");
+
+      try {
+        await fetch("http://localhost:5000/ocultar-subasta", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            auction_id: s.id
+          })
+        });
+
+        card.remove();
+
+      } catch (err) {
+        console.log("Error ocultando ganada:", err);
+      }
+    });
+
+    card.appendChild(btn);
+
+    div.appendChild(card);
+  });
+}
+
+async function cargarNotificaciones() {
+
+  const div = document.getElementById("notificaciones");
+  div.innerHTML = "";
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch("http://localhost:5000/notificaciones", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    const notificaciones = Array.isArray(data) ? data : [];
+
+    if (notificaciones.length === 0) {
+      div.innerHTML = "<p>No hay notificaciones</p>";
+      return;
+    }
+
+    
+
+for (const n of notificaciones) {
+
+  
+
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.style.cursor = "pointer";
+
+      card.innerHTML = `<p>${n.texto}</p>`;
+
+      const btn = document.createElement("button");
+      btn.innerText = "❌";
+      btn.classList.add("btn-eliminar");
+
+      btn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+
+  const token = localStorage.getItem("token"); // ✅ PRIMERO
+
+  try {
+    await fetch("http://localhost:5000/ocultar-notificacion", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        notificacion_id: n.id
+      })
+    });
+
+    card.remove(); // ✅ eliminar de la UI
+
+  } catch (err) {
+    console.log("Error ocultando:", err);
+  }
+});
+
+      card.addEventListener("click", () => {
+        window.location.href = `detalle.html?id=${n.auction_id}`;
+      });
+
+      card.appendChild(btn);
+
+
+
+      div.appendChild(card);
+    }
+
+  } catch (err) {
+    console.log("Error notificaciones:", err);
+  }
+}
+
+async function limpiarFavoritos() {
+  try {
+    await fetch("http://localhost:5000/favorites/cleanup", {
+      method: "DELETE"
+    });
+  } catch (err) {
+    console.log("Error limpiando favoritos:", err);
+  }
+}
+
+
+
+// =========================
+// INIT
+// =========================
+async function init() {
+  await limpiarFavoritos();
+
+  await cargarUsuario();
+  await cargarSubastasUsuario();
+  await cargarGanadas(); // 👈 AGREGAR ACA
+  await cargarFavoritos();
+  await cargarNotificaciones();
+}
+
+init();
+</script>
+
+</body>
+</html>

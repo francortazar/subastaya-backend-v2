@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<style>
+body { font-family: Arial; margin:0; padding:0; }
+.header {
+  position: fixed;
+  top:0;
+  width:100%;
+  background:#ffe600;
+  padding:10px;
+  z-index:1000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.contenedor { 
+  margin-top:140px; /* 👈 ESTE ES EL CAMBIO */
+  padding:10px; 
+  display:grid; 
+  grid-template-columns:repeat(2,1fr); 
+  gap:10px; 
+}
+
+.card { border:1px solid #ccc; padding:10px; display:flex; flex-direction:column; }
+.imagenes { display:flex; gap:5px; margin-top:10px; flex-wrap:wrap; }
+.imagenes img { width:48%; height:120px; object-fit:cover; }
+
+.placeholder { width:100%; height:120px; background:#ddd; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.fecha { font-size:12px; color:#666; margin-top:5px; }
+
+.footer { position: fixed; bottom:0; width:100%; background:#eee; display:flex; justify-content:space-around; padding:10px 0; }
+
+.header {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.precio {
+  font-size:18px;
+  color:green;
+  font-weight:bold;
+}
+
+.ganador-box {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+  padding: 15px;
+  margin: 70px 10px 10px 10px;
+  border-radius: 10px;
+  text-align: center;
+  animation: aparecer 0.5s ease-in-out;
+}
+
+.btn-contactar {
+  background: gold;
+  border: none;
+  padding: 10px;
+  width: 80%;
+  margin-top: 10px;
+  font-weight: bold;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-calificar {
+  background: transparent;
+  border: none;
+  color: #eee;
+  font-size: 12px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+@keyframes aparecer {
+  from { transform: scale(0.8); opacity:0; }
+  to { transform: scale(1); opacity:1; }
+}
+
+#popupNotif {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.popup-box {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  animation: pop 0.4s ease;
+  cursor: pointer;
+}
+
+@keyframes pop {
+  from { transform: scale(0.5); opacity:0; }
+  to { transform: scale(1); opacity:1; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+
+  <!-- 🔍 FILA SUPERIOR -->
+  <div class="header-top">
+
+    <input id="buscador" type="text" placeholder="Buscar..." class="search-input">
+
+    <button id="btnOrden" class="btn-orden">⏱</button>
+
+  </div>
+
+  <!-- 🔽 FILTROS (quedan abajo) -->
+  <div class="header-filtros">
+
+    <select id="filtroProvincia">
+      <option value="">Todas las provincias</option>
+      <option>Buenos Aires</option>
+      <option>CABA</option>
+      <option>Catamarca</option>
+      <option>Chaco</option>
+      <option>Chubut</option>
+      <option>Córdoba</option>
+      <option>Corrientes</option>
+      <option>Entre Ríos</option>
+      <option>Formosa</option>
+      <option>Jujuy</option>
+      <option>La Pampa</option>
+      <option>La Rioja</option>
+      <option>Mendoza</option>
+      <option>Misiones</option>
+      <option>Neuquén</option>
+      <option>Río Negro</option>
+      <option>Salta</option>
+      <option>San Juan</option>
+      <option>San Luis</option>
+      <option>Santa Cruz</option>
+      <option>Santa Fe</option>
+      <option>Santiago del Estero</option>
+      <option>Tierra del Fuego</option>
+      <option>Tucumán</option>
+    </select>
+
+    <select id="filtroCategoria">
+      <option value="">Todas las categorías</option>
+      <option>construccion</option>
+      <option>decoracion</option>
+      <option>deportes</option>
+      <option>electro</option>
+      <option>fondo de comercio</option>
+      <option>hogar</option>
+      <option>inmuebles</option>
+      <option>jardin</option>
+      <option>juegos y juguetes</option>
+      <option>liquidacion</option>
+      <option>maquinas herramientas</option>
+      <option>mascotas</option>
+      <option>moda/accesorios</option>
+      <option>mobiliario</option>
+      <option>niños/bebes</option>
+      <option>ocio</option>
+      <option>salud</option>
+      <option>tecnologia</option>
+      <option>vehiculos</option>
+    </select>
+
+  </div>
+
+</div>
+
+
+<div class="contenedor" id="subastasContainer"></div>
+
+<div class="footer">
+  <button id="btnUsuario" onclick="irUsuario()">Usuario</button>
+  <button onclick="window.location.href='publicar.html'">Publicar</button>
+  <button onclick="logout()">Salir</button>
+</div>
+
+<script>
+  let todasLasSubastas = [];
+  let usuarioGlobal = null;
+  let modoOrden = "default";
+  let bidsCache = {};
+
+  async function cargarBotonUsuario() {
+  const btn = document.getElementById("btnUsuario");
+  const token = localStorage.getItem("token");
+
+  if (!btn) return;
+
+  // 👉 SI NO HAY TOKEN
+  if (!token) {
+    btn.textContent = "Iniciar sesión";
+    btn.onclick = () => {
+      window.location.href = "login.html";
+    };
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    // 👉 SI EL TOKEN NO ES VÁLIDO
+    if (!res.ok) {
+      btn.textContent = "Iniciar sesión";
+      btn.onclick = () => {
+        window.location.href = "login.html";
+      };
+      return;
+    }
+
+    const data = await res.json();
+
+    if (data.profile) {
+      btn.textContent = `👤 ${data.profile.username}`;
+      btn.onclick = () => {
+        window.location.href = "usuario.html";
+      };
+    }
+
+  } catch (err) {
+    console.log("Error cargando usuario:", err);
+  }
+}
+
+document.getElementById("btnOrden").addEventListener("click", () => {
+
+  if (modoOrden === "default") {
+    modoOrden = "urgente";
+    document.getElementById("btnOrden").textContent = "📅";
+  } else {
+    modoOrden = "default";
+    document.getElementById("btnOrden").textContent = "⏱";
+  }
+
+  aplicarFiltros();
+});
+function logout() {
+  localStorage.removeItem("token");
+  window.location.href = "login.html";
+}
+
+async function cargarSubastas() {
+  try {
+    const container = document.getElementById("subastasContainer");
+    
+
+    // =========================
+    // USUARIO LOGUEADO
+    // =========================
+    let usuario = null;
+
+    try {
+      const token = localStorage.getItem("token");
+      console.log("TOKEN:", token); // 👈 AGREGAR ESTA LÍNEA
+
+      if (token) {
+        const resUser = await fetch("http://localhost:5000/me", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (resUser.ok) {
+          const dataUser = await resUser.json();
+
+usuario = dataUser.user;
+usuarioGlobal = usuario;
+
+if (dataUser.profile) {
+  const btn = document.getElementById("btnUsuario");
+  btn.textContent = `👤 ${dataUser.profile.username}`;
+}
+        }
+      }
+    } catch {
+      usuario = null;
+    }
+
+    // =========================
+    // SUBASTAS
+    // =========================
+    const res = await fetch("http://localhost:5000/subastas");
+    const data = await res.json();
+    const subastas = Array.isArray(data) ? data : [];
+    const ahora = new Date();
+
+const subastasActivas = subastas.filter(subasta => {
+  const inicio = new Date(subasta.fecha_creacion);
+  const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+  return ahora < fin;
+});
+    todasLasSubastas = subastas; // 🔥 TODAS
+
+
+await renderSubastas(subastasActivas, usuario); 
+await new Promise(r => setTimeout(r, 300));
+
+// =========================
+// POPUP GANADOR / VENDEDOR
+// =========================
+for (const subasta of subastas) {
+
+  
+
+  let bids = [];
+
+try {
+  const resBids = await fetch(`http://localhost:5000/bids?auction_id=${subasta.id}`);
+  const data = await resBids.json();
+  bids = Array.isArray(data) ? data : [];
+} catch {}
+
+  const ultimaPuja = bids.sort((a,b)=>b.monto-a.monto)[0];
+
+  const ahora = new Date();
+  const inicio = new Date(subasta.fecha_creacion);
+  const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+  const finalizada = ahora > fin;
+
+  if (!usuarioGlobal || !finalizada) continue;
+
+  // 🏆 GANASTE
+  if (
+    ultimaPuja &&
+    ultimaPuja.user_id === usuarioGlobal.id &&
+    subasta.user_id !== usuarioGlobal.id
+  ) {
+    mostrarPopup("ganaste", subasta);
+    break;
+  }
+
+  // 🏁 VENDISTE
+if (
+  subasta.user_id === usuarioGlobal.id &&
+  ultimaPuja &&
+  finalizada
+) {
+    mostrarPopup("vendiste", subasta);
+    break;
+  }
+}
+
+function mostrarPopup(tipo, subasta) {
+  const popup = document.getElementById("popupNotif");
+
+  const key = `popup_${tipo}_${subasta.id}_session`;
+
+  if (sessionStorage.getItem(key)) return;
+
+  sessionStorage.setItem(key, "1");
+
+  popup.innerHTML = `
+    <div class="popup-box">
+      <h1>${tipo === "ganaste" ? "🎉 GANASTE!!! 🎉" : "🏁 VENDISTE!!! 🏁"}</h1>
+      <p>${subasta.titulo}</p>
+      <p>(Click para ver)</p>
+    </div>
+  `;
+
+  popup.style.display = "flex";
+
+  popup.onclick = () => {
+    window.location.href = `detalle.html?id=${subasta.id}`;
+  };
+}
+    // =========================
+// OBTENER USERNAME
+// =========================
+if (usuario) {
+  const btn = document.getElementById("btnUsuario");
+
+  const perfiles = subastas
+    .map(s => s.profiles)
+    .filter(p => p);
+
+  const perfil = perfiles.find(p => p.id === usuario.id);
+
+  if (perfil) {
+    btn.textContent = `👤 ${perfil.username}`;
+  }
+}
+
+
+
+  } catch(err) {
+    console.error("Error cargando subastas:", err);
+  }
+}
+function irUsuario() {
+  window.location.href = "usuario.html";
+}
+function irUsuario() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    window.location.href = "login.html";
+  } else {
+    window.location.href = "usuario.html";
+  }
+}
+cargarBotonUsuario();
+
+cargarSubastas();
+
+
+async function renderSubastas(subastas, usuario) {
+  const container = document.getElementById("subastasContainer");
+  
+
+  container.innerHTML = "";
+
+  
+    for (const subasta of subastas) {
+
+      // =========================
+      // TRAER PUJAS
+      // =========================
+      let bids = [];
+
+      try {
+        const resBids = await fetch(`http://localhost:5000/bids?auction_id=${subasta.id}`);
+        const data = await resBids.json();
+        bids = Array.isArray(data) ? data : [];
+      } catch {
+        bids = [];
+      }
+      bidsCache[subasta.id] = bids;
+
+      // =========================
+      // ORDENAR PUJAS (CLAVE)
+      // =========================
+      const bidsOrdenadas = bids.sort((a, b) => b.monto - a.monto);
+      const ultimaPuja = bidsOrdenadas[0];
+
+      // =========================
+      // PRECIO
+      // =========================
+      const precioActual = ultimaPuja
+        ? ultimaPuja.monto
+        : subasta.precio_inicial;
+
+      // =========================
+      // TIEMPO
+      // =========================
+      const ahora = new Date();
+      const inicio = new Date(subasta.fecha_creacion);
+      const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+      const subastaFinalizada = ahora > fin;
+
+      // DEBUG PRO
+      console.log({
+        usuario,
+        subasta: subasta.id,
+        ultimaPuja,
+        esGanador: ultimaPuja?.user?.id === usuario?.id,
+        esVendedor: subasta.user_id === usuario?.id
+      });
+
+      
+
+      // =========================
+      // CARD
+      // =========================
+      const card = document.createElement("div");
+      card.classList.add("card");
+      card.style.cursor = "pointer";
+
+      card.addEventListener("click", () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          alert("Debes iniciar sesión para ver la subasta.");
+          window.location.href = "login.html";
+          return;
+        }
+        window.location.href = `detalle.html?id=${subasta.id}`;
+      });
+
+      card.innerHTML = `
+        <h3>${subasta.titulo}</h3>
+        <p class="precio">$${precioActual}</p>
+        <p>${subasta.provincia}</p>
+      `;
+
+      const divImgs = document.createElement("div");
+      divImgs.classList.add("imagenes");
+
+      let imagenes = subasta.imagenes;
+      if (!Array.isArray(imagenes)) imagenes = [];
+
+      if (imagenes.length > 0) {
+        imagenes.forEach(url => {
+          const img = document.createElement("img");
+          img.src = encodeURI(url);
+          img.onerror = () => img.style.display="none";
+          divImgs.appendChild(img);
+        });
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.classList.add("placeholder");
+        placeholder.textContent = "Sin imagen";
+        divImgs.appendChild(placeholder);
+      }
+
+      card.appendChild(divImgs);
+
+      const countdown = document.createElement("p");
+      countdown.style.fontSize = "13px";
+      countdown.style.fontWeight = "bold";
+      countdown.style.color = "#d9534f";
+
+      card.appendChild(countdown);
+
+      function actualizarCountdown() {
+        const ahora = new Date();
+        const inicio = new Date(subasta.fecha_creacion);
+        const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+        const diff = fin - ahora;
+
+        if (diff <= 0) {
+          countdown.textContent = "⛔ Finalizada";
+          return;
+        }
+
+        const minutos = Math.floor(diff / 1000 / 60);
+        const segundos = Math.floor((diff / 1000) % 60);
+        const horas = Math.floor(minutos / 60);
+        const dias = Math.floor(horas / 24);
+
+        if (dias > 0) {
+          countdown.textContent = `⏳ ${dias}d ${horas % 24}h`;
+        } else if (horas > 0) {
+          countdown.textContent = `⏳ ${horas}h ${minutos % 60}m`;
+        } else {
+          countdown.textContent = `⏳ ${minutos}m ${segundos}s`;
+        }
+      }
+
+      actualizarCountdown();
+      setInterval(actualizarCountdown, 1000);
+
+      const fechaCreacion = new Date(subasta.fecha_creacion);
+
+      const fechaFormateada = fechaCreacion.toLocaleDateString("es-AR", {
+        timeZone: "America/Argentina/Buenos_Aires"
+      });
+
+      const horaFormateada = fechaCreacion.toLocaleTimeString("es-AR", {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: "America/Argentina/Buenos_Aires"
+      });
+
+      const fechaDiv = document.createElement("p");
+      fechaDiv.classList.add("fecha");
+      fechaDiv.textContent = `Publicado: ${fechaFormateada} ${horaFormateada}`;
+
+      card.appendChild(fechaDiv);
+
+      container.appendChild(card);
+    }
+  }
+
+
+function coincideBusqueda(subasta, texto) {
+  const palabras = texto.toLowerCase().split(" ").filter(p => p);
+
+  const titulo = (subasta.titulo || "").toLowerCase();
+
+  return palabras.every(p => titulo.includes(p));
+}
+async function aplicarFiltros() {
+  const texto = document.getElementById("buscador").value.toLowerCase();
+  const provincia = document.getElementById("filtroProvincia").value;
+  const categoria = document.getElementById("filtroCategoria").value;
+
+  let filtradas = todasLasSubastas.filter(subasta => {
+  const ahora = new Date();
+  const inicio = new Date(subasta.fecha_creacion);
+  const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+  return ahora < fin;
+});
+
+  // 🔎 FILTRO BUSCADOR (título)
+  if (texto) {
+    const palabras = texto.split(" ").filter(p => p);
+
+    filtradas = filtradas.filter(subasta => {
+      const titulo = (subasta.titulo || "").toLowerCase();
+      return palabras.every(p => titulo.includes(p));
+    });
+  }
+
+  // 📍 FILTRO PROVINCIA
+  if (provincia) {
+    filtradas = filtradas.filter(s => s.provincia === provincia);
+  }
+
+  // 🏷️ FILTRO CATEGORÍA
+  if (categoria) {
+    filtradas = filtradas.filter(s => s.rubro === categoria);
+  }
+
+  // ⏳ ORDENAMIENTO
+if (modoOrden === "urgente") {
+  filtradas.sort((a, b) => {
+    const ahora = new Date();
+
+    const finA = new Date(new Date(a.fecha_creacion).getTime() + (a.duracion || 0));
+    const finB = new Date(new Date(b.fecha_creacion).getTime() + (b.duracion || 0));
+
+    return finA - finB; // menor tiempo restante primero
+  });
+} else {
+  // 📅 ORDEN NORMAL (más nuevas primero)
+  filtradas.sort((a, b) => {
+    return new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
+  });
+}
+
+  await renderSubastas(filtradas, usuarioGlobal);
+}
+document.getElementById("buscador")
+  .addEventListener("input", aplicarFiltros);
+
+document.getElementById("filtroProvincia")
+  .addEventListener("change", aplicarFiltros);
+
+document.getElementById("filtroCategoria")
+  .addEventListener("change", aplicarFiltros);
+ 
+  
+
+
+</script>
+<div id="popupNotif" style="display:none;"></div>
+
+</body>
+</html>

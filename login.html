@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Subastas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* =========================
+BASE
+========================= */
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #f5f5f5;
+}
+
+/* =========================
+HEADER ML
+========================= */
+.header-login {
+  background: #ffe600;
+  padding: 20px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+/* =========================
+CONTENEDOR
+========================= */
+.container {
+  max-width: 400px;
+  margin: 30px auto;
+
+  background: white;
+  padding: 20px;
+
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* =========================
+TABS
+========================= */
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  border-bottom: 2px solid #3483fa;
+  color: #3483fa;
+}
+
+/* =========================
+FORMULARIOS
+========================= */
+.form {
+  display: none;
+}
+
+.form.active {
+  display: block;
+}
+
+/* =========================
+INPUTS
+========================= */
+input, select {
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0;
+
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* =========================
+BOTONES
+========================= */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+
+  border-radius: 8px;
+  border: none;
+
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #3483fa;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2968c8;
+}
+
+/* =========================
+CHECKBOX
+========================= */
+
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.checkbox-group label {
+  background: white;
+  padding: 8px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  transition: 0.2s;
+}
+
+.checkbox-group input:checked + label {
+  background: #3483fa;
+  color: white;
+  border-color: #3483fa;
+}
+
+/* =========================
+SEPARADOR
+========================= */
+hr {
+  margin: 20px 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+.checkbox-group input {
+  display: none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header-login">Subastaya</div>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="cambiarTab('login')">Iniciar sesión</div>
+    <div class="tab" onclick="cambiarTab('registro')">Registrarse</div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="formLogin" class="form active">
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Contraseña">
+
+    <button class="btn-primary" onclick="login()">Iniciar sesión</button>
+  </div>
+
+  <!-- REGISTRO -->
+  <div id="formRegistro" class="form">
+
+    <input type="text" id="username" placeholder="Usuario">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Contraseña">
+    <input type="text" id="telefono" placeholder="Teléfono">
+
+    <!-- PROVINCIAS COMPLETAS -->
+    <select id="provincia">
+      <option>San Luis</option>
+      <option>Buenos Aires</option>
+      <option>Córdoba</option>
+      <option>Santa Fe</option>
+      <option>Mendoza</option>
+      <option>La Pampa</option>
+      <option>Neuquén</option>
+      <option>Río Negro</option>
+      <option>Chubut</option>
+      <option>Santa Cruz</option>
+      <option>Tierra del Fuego</option>
+      <option>Salta</option>
+      <option>Jujuy</option>
+      <option>Tucumán</option>
+      <option>Santiago del Estero</option>
+      <option>Catamarca</option>
+      <option>La Rioja</option>
+      <option>San Juan</option>
+      <option>Entre Ríos</option>
+      <option>Corrientes</option>
+      <option>Misiones</option>
+      <option>Formosa</option>
+      <option>Chaco</option>
+    </select>
+
+    <h4>Preferencias</h4>
+
+    <!-- CATEGORÍAS COMPLETAS -->
+    <div class="checkbox-group">
+
+  <input type="checkbox" id="cat1" value="construccion">
+  <label for="cat1">Construcción</label>
+
+  <input type="checkbox" id="cat2" value="decoracion">
+  <label for="cat2">Decoración</label>
+
+  <input type="checkbox" id="cat3" value="deportes">
+  <label for="cat3">Deportes</label>
+
+  <input type="checkbox" id="cat4" value="electro">
+  <label for="cat4">Electro</label>
+
+  <input type="checkbox" id="cat5" value="fondo_comercio">
+  <label for="cat5">Fondo de comercio</label>
+
+  <input type="checkbox" id="cat6" value="hogar">
+  <label for="cat6">Hogar</label>
+
+  <input type="checkbox" id="cat7" value="inmuebles">
+  <label for="cat7">Inmuebles</label>
+
+  <input type="checkbox" id="cat8" value="jardin">
+  <label for="cat8">Jardín</label>
+
+  <input type="checkbox" id="cat9" value="juegos_juguetes">
+  <label for="cat9">Juegos y juguetes</label>
+
+  <input type="checkbox" id="cat10" value="liquidacion">
+  <label for="cat10">Liquidación</label>
+
+  <input type="checkbox" id="cat11" value="maquinas_herramientas">
+  <label for="cat11">Máquinas herramientas</label>
+
+  <input type="checkbox" id="cat12" value="mascotas">
+  <label for="cat12">Mascotas</label>
+
+  <input type="checkbox" id="cat13" value="mobiliario">
+  <label for="cat13">Mobiliario</label>
+
+  <input type="checkbox" id="cat14" value="moda_accesorios">
+  <label for="cat14">Moda / Accesorios</label>
+
+  <input type="checkbox" id="cat15" value="ninos_bebes">
+  <label for="cat15">Niños / Bebés</label>
+
+  <input type="checkbox" id="cat16" value="ocio">
+  <label for="cat16">Ocio</label>
+
+  <input type="checkbox" id="cat17" value="salud">
+  <label for="cat17">Salud</label>
+
+  <input type="checkbox" id="cat18" value="tecnologia">
+  <label for="cat18">Tecnología</label>
+
+  <input type="checkbox" id="cat19" value="vehiculos">
+  <label for="cat19">Vehículos</label>
+
+</div>
+    <button class="btn-primary" onclick="registrar()">Registrarse</button>
+
+  </div>
+
+</div>
+
+<script>
+
+/* =========================
+TABS
+========================= */
+function cambiarTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".form").forEach(f => f.classList.remove("active"));
+
+  if (tab === "login") {
+    document.querySelectorAll(".tab")[0].classList.add("active");
+    document.getElementById("formLogin").classList.add("active");
+  } else {
+    document.querySelectorAll(".tab")[1].classList.add("active");
+    document.getElementById("formRegistro").classList.add("active");
+  }
+}
+
+/* =========================
+VALIDAR SESIÓN
+========================= */
+window.onload = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) return;
+
+  try {
+    const res = await fetch("http://localhost:5000/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      window.location.href = "home.html";
+    } else {
+      localStorage.removeItem("token");
+    }
+  } catch {
+    localStorage.removeItem("token");
+  }
+};
+
+/* =========================
+LOGIN
+========================= */
+async function login() {
+  const data = {
+    email: document.getElementById("loginEmail").value,
+    password: document.getElementById("loginPassword").value
+  };
+
+  const res = await fetch("http://localhost:5000/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+
+  if (result.session?.access_token) {
+    localStorage.clear();
+    localStorage.setItem("token", result.session.access_token);
+    window.location.href = "home.html";
+  } else {
+    alert(result.error || "Error al iniciar sesión");
+  }
+}
+
+/* =========================
+REGISTRO
+========================= */
+async function registrar() {
+
+  const preferencias = [];
+  document.querySelectorAll('#formRegistro input[type="checkbox"]:checked')
+    .forEach(el => preferencias.push(el.value));
+
+  const data = {
+    username: document.getElementById("username").value,
+    email: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+    telefono: document.getElementById("telefono").value,
+    provincia: document.getElementById("provincia").value,
+    preferencias
+  };
+
+  const res = await fetch("http://localhost:5000/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  });
+
+  const result = await res.json();
+
+  if (result.msg) {
+    cambiarTab("login");
+    alert("Usuario creado, ahora iniciá sesión");
+  } else {
+    alert(result.error || "Error en registro");
+  }
+}
+
+</script>
+
+</body>
+</html>

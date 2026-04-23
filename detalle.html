@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalle Subasta</title>
+
+<style>
+body { font-family: Arial; margin:0; padding:0; }
+
+#countdown {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ff3b30;
+  margin: 8px 0;
+}
+button:active {
+  transform: scale(0.97);
+}
+.contenedor {
+  padding: 10px;
+  margin-bottom: 80px;
+
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.descripcion {
+  word-break: break-word; /* 🔥 rompe palabras largas */
+}
+
+/* SLIDER */
+.slider {
+  display: flex;
+  overflow-x: auto;        /* 🔥 scroll horizontal */
+  overflow-y: hidden;      /* 🔥 evita scroll vertical raro */
+  scroll-snap-type: x mandatory;
+  gap: 0;
+  border-radius: 12px;
+
+  -webkit-overflow-scrolling: touch; /* 🔥 suavidad en mobile */
+}
+.slider img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+
+  flex-shrink: 0;              /* 🔥 clave para slide */
+  scroll-snap-align: center;
+}
+.slider {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  border-radius: 12px;
+  
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.descripcion {
+  margin-top: 10px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  line-height: 1.4;
+}
+
+.historial {
+  margin-top:20px;
+  background:#f5f5f5;
+  padding:10px;
+  border-radius:8px;
+}
+
+.historial ul {
+  padding-left: 15px;
+}
+
+.historial li {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #eee;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+}
+
+.zocalo button {
+  flex: 1;
+  padding: 12px;
+  font-size: 14px;
+}
+#btnUsuario {
+  background: #007bff;
+  color: white;
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+button {
+  padding:12px;
+  cursor:pointer;
+  font-size:16px;
+}
+.zocalo button {
+  flex: 1;
+  margin: 0 5px;
+}
+.descripcion {
+  margin-top: 10px;
+  background: #fff;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  line-height: 1.5;
+
+
+  /* 🔥 CLAVES */
+  white-space: pre-line;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+body {
+  font-family: Arial;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* 🔥 evita scroll lateral */
+}
+
+#titulo {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+.btn-primary {
+  width: 100%;
+  background: #1e6dfb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="contenedor">
+  <h2 id="titulo">Cargando...</h2>
+
+  <div id="imagenesContainer"></div>
+
+  <p id="provincia"></p>
+  <p class="descripcion" id="descripcion"></p>
+
+  <p id="countdown" style="
+  font-size:14px;
+  font-weight:bold;
+  color:#d9534f;
+"></p>
+
+  <button id="pujarBtn">Cargando...</button>
+
+  <div class="historial">
+    <h3>Historial de pujas</h3>
+    <ul id="listaPujas"></ul>
+  </div>
+  <!-- ========================= -->
+<!-- PREGUNTAS -->
+<!-- ========================= -->
+<div class="historial">
+  <h3>Preguntas</h3>
+
+  <div id="preguntasContainer"></div>
+
+  <textarea id="nuevaPregunta" placeholder="Escribí tu pregunta..." style="width:100%; margin-top:10px;"></textarea>
+  <button onclick="enviarPregunta()">Preguntar</button>
+</div>
+</div>
+
+<div class="footer">
+  <button onclick="window.location.href='home.html'">Home</button>
+  <button id="btnUsuario" onclick="irUsuario()">Usuario</button>
+</div>
+
+<script>
+    let subastaActual = null;
+let btnFav = null; // 🔥 AGREGAR
+let fav = false;   // 🔥 AGREGAR
+    async function cargarBotonUsuario() {
+  const btn = document.getElementById("btnUsuario");
+  const token = localStorage.getItem("token");
+
+  if (!btn) return;
+
+  // 🔥 SIEMPRE ARRANCA CON ALGO
+  btn.textContent = "Usuario";
+
+  if (!token) {
+  btn.textContent = "Iniciar sesión";
+  btn.onclick = irUsuario;
+  return;
+}
+
+  try {
+    const res = await fetch("http://localhost:5000/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) {
+      btn.textContent = "Iniciar sesión";
+      btn.onclick = () => window.location.href = "login.html";
+      return;
+    }
+
+    const data = await res.json();
+
+    console.log("DATA USER:", data); // 👈 DEBUG
+
+    if (data.profile) {
+      btn.textContent = `👤 ${data.profile.username}`;
+      btn.onclick = () => window.location.href = "usuario.html";
+    }
+
+  } catch (err) {
+    console.log("Error usuario:", err);
+  }
+}
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+let usuario = null;
+
+// =========================
+// USUARIO LOGUEADO
+// =========================
+async function cargarUsuario() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    const res = await fetch("http://localhost:5000/me", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    usuario = data.user;
+  } catch {
+    usuario = null;
+  }
+}
+
+// =========================
+// CARGAR SUBASTA
+// =========================
+async function cargarSubasta() {
+  await cargarUsuario();
+
+  const res = await fetch("http://localhost:5000/subastas");
+  const subastas = await res.json();
+  const subasta = subastas.find(s => s.id == id);
+  subastaActual = subasta;
+
+  function actualizarCountdown() {
+  const ahora = new Date();
+
+  const inicio = new Date(subasta.fecha_creacion);
+  const fin = new Date(inicio.getTime() + (subasta.duracion || 0));
+
+  const diff = fin - ahora;
+
+  const countdown = document.getElementById("countdown");
+
+  if (diff <= 0) {
+    countdown.textContent = "⛔ Finalizada";
+
+    // 🔴 BONUS: desactivar botón
+    const btn = document.getElementById("pujarBtn");
+    btn.disabled = true;
+    btn.textContent = "Subasta finalizada";
+
+    return;
+  }
+
+  const minutos = Math.floor(diff / 1000 / 60);
+  const segundos = Math.floor((diff / 1000) % 60);
+  const horas = Math.floor(minutos / 60);
+  const dias = Math.floor(horas / 24);
+
+  if (dias > 0) {
+    countdown.textContent = `⏳ ${dias}d ${horas % 24}h`;
+  } else if (horas > 0) {
+    countdown.textContent = `⏳ ${horas}h ${minutos % 60}m`;
+  } else {
+    countdown.textContent = `⏳ ${minutos}m ${segundos}s`;
+  }
+}
+
+// 🔥 activar
+actualizarCountdown();
+setInterval(actualizarCountdown, 1000);
+
+  if (!subasta) {
+    alert("Subasta no encontrada");
+    window.location.href = "home.html";
+    return;
+  }
+
+  document.getElementById("titulo").textContent = subasta.titulo;
+  document.getElementById("provincia").textContent = "Provincia: " + subasta.provincia;
+  document.getElementById("descripcion").innerText = subasta.descripcion;
+
+  // =========================
+  // SLIDER TOUCH
+  // =========================
+  const container = document.getElementById("imagenesContainer");
+  const imagenes = subasta.imagenes || [];
+
+  container.innerHTML = "";
+
+  if (imagenes.length === 0) {
+    container.textContent = "Sin imágenes";
+  } else {
+    const slider = document.createElement("div");
+slider.classList.add("slider");
+slider.style.width = "100%";
+slider.style.display = "flex";
+slider.style.position = "relative";
+
+// ICONOS
+const iconos = document.createElement("div");
+iconos.style.position = "absolute";
+iconos.style.top = "12px";
+iconos.style.right = "12px";
+iconos.style.gap = "8px";
+iconos.style.display = "flex";
+iconos.style.zIndex = "10";
+
+// BOTÓN COMPARTIR (WHATSAPP)
+const btnShare = document.createElement("button");
+btnShare.innerHTML = "🔗";
+btnShare.title = "Compartir por WhatsApp";
+btnShare.style.border = "none";
+btnShare.style.borderRadius = "50%";
+btnShare.style.width = "44px";
+btnShare.style.height = "44px";
+btnShare.style.cursor = "pointer";
+btnShare.style.fontSize = "20px";
+btnShare.style.display = "flex";
+btnShare.style.alignItems = "center";
+btnShare.style.justifyContent = "center";
+btnShare.style.background = "rgba(0,0,0,0.6)";
+btnShare.style.color = "white";
+btnShare.style.backdropFilter = "blur(6px)";
+
+// BOTÓN FAVORITO
+btnFav = document.createElement("button");
+btnFav.innerHTML = "🤍";
+btnShare.style.border = "none";
+btnShare.style.borderRadius = "50%";
+btnShare.style.width = "44px";
+btnShare.style.height = "44px";
+btnShare.style.cursor = "pointer";
+btnShare.style.fontSize = "20px";
+btnShare.style.display = "flex";
+btnShare.style.alignItems = "center";
+btnShare.style.justifyContent = "center";
+btnShare.style.background = "rgba(0,0,0,0.6)";
+btnShare.style.color = "white";
+btnShare.style.backdropFilter = "blur(6px)";
+
+await cargarFavorito();
+
+// TOGGLE CORAZÓN
+let fav = false;
+btnFav.onclick = toggleFavorito;
+
+// SHARE WHATSAPP
+btnShare.onclick = () => {
+  const url = window.location.href;
+  const texto = `Mirá esta subasta: ${subasta.titulo} ${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
+};
+
+iconos.appendChild(btnShare);
+iconos.appendChild(btnFav);
+slider.appendChild(iconos);
+
+    imagenes.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      slider.appendChild(img);
+    });
+
+    container.appendChild(slider);
+  }
+
+  actualizarBoton(subasta);
+  cargarHistorial();
+}
+async function toggleFavorito() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Debes iniciar sesión");
+    window.location.href = "login.html";
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/favorites/toggle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        auction_id: id
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      fav = !fav;
+      btnFav.innerHTML = fav ? "❤️" : "🤍";
+    } else {
+      alert(data.error || "Error en favorito");
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function cargarFavorito() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`http://localhost:5000/favorites/check?auction_id=${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    fav = data.favorito;
+    btnFav.innerHTML = fav ? "❤️" : "🤍";
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+// =========================
+// CARGAR PREGUNTAS
+// =========================
+async function cargarPreguntas() {
+
+  const container = document.getElementById("preguntasContainer");
+  container.innerHTML = "";
+
+  try {
+    const res = await fetch(`http://localhost:5000/questions?auction_id=${id}`);
+    const data = await res.json();
+
+    const preguntas = Array.isArray(data) ? data : [];
+
+    if (preguntas.length === 0) {
+      container.innerHTML = "<p>No hay preguntas aún</p>";
+      return;
+    }
+
+    preguntas.forEach(p => {
+  const div = document.createElement("div");
+  div.style.marginBottom = "10px";
+
+  const username = p.user?.username || "Usuario";
+
+  const esVendedor = usuario && subastaActual && usuario.id === subastaActual.user_id;
+
+  div.innerHTML = `
+    <p><strong>${username}:</strong> ${p.question}</p>
+
+    ${
+      p.answer
+        ? `<p style="color:green;"><strong>Vendedor:</strong> ${p.answer}</p>`
+        : esVendedor
+          ? `<button onclick="responderPregunta('${p.id}')">Responder</button>`
+          : `<p style="color:gray;">Sin respuesta</p>`
+    }
+
+    ${
+      esVendedor
+        ? `<button style="color:red;" onclick="eliminarPregunta('${p.id}')">Eliminar</button>`
+        : ""
+    }
+  `;
+
+  container.appendChild(div);
+});
+
+  } catch (err) {
+    console.log("Error cargando preguntas:", err);
+  }
+}
+// =========================
+// ENVIAR PREGUNTA
+// =========================
+async function enviarPregunta() {
+
+  const textarea = document.getElementById("nuevaPregunta");
+  const texto = textarea.value.trim();
+
+  if (!texto) {
+    alert("Escribí una pregunta");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    alert("Debes iniciar sesión");
+    window.location.href = "login.html";
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:5000/questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        auction_id: id,
+        question: texto
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      textarea.value = "";
+      cargarPreguntas(); // 🔥 refrescar
+    } else {
+      alert(data.error || "Error al enviar pregunta");
+    }
+
+  } catch (err) {
+    console.log("Error:", err);
+  }
+}
+
+// =========================
+// BOTÓN PUJAR (CORREGIDO)
+// =========================
+async function actualizarBoton(subasta) {
+
+  const res = await fetch(`http://localhost:5000/bids?auction_id=${id}`);
+
+  let bids = [];
+
+  try {
+    const data = await res.json();
+    bids = Array.isArray(data) ? data : [];
+  } catch {
+    bids = [];
+  }
+
+  const ultimaPuja = bids.length > 0
+    ? parseFloat(bids[0].monto)
+    : parseFloat(subasta.precio_inicial || 0);
+
+  const porcentaje = parseFloat(subasta.incremento_puja || 10);
+  const siguienteMonto = Math.ceil(ultimaPuja * (1 + porcentaje / 100));
+
+  const btn = document.getElementById("pujarBtn");
+  btn.classList.add("btn-primary");
+  btn.disabled = false;
+  btn.textContent = `Pujar por $${siguienteMonto}`;
+
+  // ❌ bloquear dueño
+  if (usuario && usuario.id === subasta.user_id) {
+    btn.disabled = true;
+    btn.textContent = "No puedes pujar tu propia subasta";
+    return;
+  }
+
+  btn.onclick = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Debes iniciar sesión");
+      window.location.href = "login.html";
+      return;
+    }
+
+    const confirmar = confirm(`¿Seguro que quieres pujar $${siguienteMonto}?`);
+    if (!confirmar) return;
+
+    const res = await fetch("http://localhost:5000/pujar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        auction_id: id,
+        monto: siguienteMonto
+      })
+    });
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
+    if (res.ok) {
+      alert("Puja realizada ✅");
+      cargarSubasta(); // refresca todo
+    } else {
+      alert(data.error || "Error al pujar");
+    }
+  };
+}
+
+// =========================
+// HISTORIAL (CORREGIDO)
+// =========================
+async function cargarHistorial() {
+
+  const res = await fetch(`http://localhost:5000/bids?auction_id=${id}`);
+
+  let bids = [];
+
+  try {
+    const data = await res.json();
+    bids = Array.isArray(data) ? data : [];
+  } catch {
+    bids = [];
+  }
+
+  const lista = document.getElementById("listaPujas");
+  lista.innerHTML = "";
+
+  if (bids.length === 0) {
+    lista.innerHTML = "<li>No hay pujas aún</li>";
+    return;
+  }
+
+  bids.forEach(bid => {
+     console.log("BID:", bid); // 👈 ACÁ
+
+    const usuario = bid.user?.username 
+  || bid.user_id?.slice(0, 6) 
+  || "Usuario";
+
+    // 🔥 FECHA Y HORA
+   const fechaObj = new Date(bid.created_at + "Z");
+
+const fechaHora = fechaObj.toLocaleString("es-AR", {
+  timeZone: "America/Argentina/Buenos_Aires",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit"
+});
+
+    const fecha = fechaObj.toLocaleDateString("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires"
+    });
+
+    const hora = fechaObj.toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Argentina/Buenos_Aires"
+    });
+
+    const li = document.createElement("li");
+
+    li.innerHTML = `
+  👤 <strong>${usuario}</strong><br>
+  💰 $${bid.monto}<br>
+  📅 ${fechaHora}
+`;
+
+    lista.appendChild(li);
+  });
+}
+
+// =========================
+// RESPONDER PREGUNTA
+// =========================
+async function responderPregunta(questionId) {
+
+  const respuesta = prompt("Escribí tu respuesta:");
+
+  if (!respuesta) return;
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch("http://localhost:5000/questions/answer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        question_id: questionId,
+        answer: respuesta
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      cargarPreguntas(); // 🔥 refresca preguntas
+    } else {
+      alert(data.error || "Error al responder");
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+// =========================
+// ELIMINAR PREGUNTA
+// =========================
+async function eliminarPregunta(questionId) {
+
+  const confirmar = confirm("¿Eliminar esta pregunta?");
+
+  if (!confirmar) return;
+
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`http://localhost:5000/questions/${questionId}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      cargarPreguntas(); // 🔥 refresca
+    } else {
+      alert(data.error || "Error al eliminar");
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+}
+function irUsuario() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    window.location.href = "login.html";
+  } else {
+    window.location.href = "usuario.html";
+  }
+}
+
+cargarBotonUsuario();
+cargarSubasta();
+cargarPreguntas();
+</script>
+
+</body>
+</html>
