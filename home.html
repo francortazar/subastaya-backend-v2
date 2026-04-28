@@ -209,7 +209,7 @@ body { font-family: Arial; margin:0; padding:0; }
   }
 
   try {
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -270,7 +270,7 @@ async function cargarSubastas() {
       console.log("TOKEN:", token); // 👈 AGREGAR ESTA LÍNEA
 
       if (token) {
-        const resUser = await fetch("http://localhost:5000/me", {
+        const resUser = await fetch("https://subastaya-backend-v2.onrender.com/me", {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -295,7 +295,7 @@ if (dataUser.profile) {
     // =========================
     // SUBASTAS
     // =========================
-    const res = await fetch("http://localhost:5000/subastas");
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/subastas");
     const data = await res.json();
     const subastas = Array.isArray(data) ? data : [];
     const ahora = new Date();
@@ -321,7 +321,7 @@ for (const subasta of subastas) {
   let bids = [];
 
 try {
-  const resBids = await fetch(`http://localhost:5000/bids?auction_id=${subasta.id}`);
+  const resBids = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${subasta.id}`);
   const data = await resBids.json();
   bids = Array.isArray(data) ? data : [];
 } catch {}
@@ -434,7 +434,7 @@ async function renderSubastas(subastas, usuario) {
       let bids = [];
 
       try {
-        const resBids = await fetch(`http://localhost:5000/bids?auction_id=${subasta.id}`);
+        const resBids = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${subasta.id}`);
         const data = await resBids.json();
         bids = Array.isArray(data) ? data : [];
       } catch {

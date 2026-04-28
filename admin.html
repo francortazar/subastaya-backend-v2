@@ -103,7 +103,7 @@ async function cargarAdmin() {
   const provincia = document.getElementById("filtroProvincia").value;
   const categoria = document.getElementById("filtroCategoria").value;
 
-  const res = await fetch(`http://localhost:5000/admin/stats?provincia=${provincia}&categoria=${categoria}`, {
+  const res = await fetch(`https://subastaya-backend-v2.onrender.com/admin/stats?provincia=${provincia}&categoria=${categoria}`, {
     headers: {
       Authorization: "Bearer " + token
     }

@@ -179,7 +179,7 @@ async function subirImagenes() {
 
     const base64 = await fileToBase64(file);
 
-    const res = await fetch("http://localhost:5000/subir-imagen",{
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/subir-imagen",{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
@@ -203,7 +203,7 @@ async function subirImagenes() {
 }
 async function cargarSubastaParaEditar() {
 
-  const res = await fetch(`http://localhost:5000/subasta/${subastaId}`);
+  const res = await fetch(`https://subastaya-backend-v2.onrender.com/subasta/${subastaId}`);
   const subasta = await res.json();
   imagenesExistentes = subasta.imagenes || [];
 
@@ -288,8 +288,8 @@ if (imagenesURLs.length === 0) {
 }
 
   const url = modoEdicion
-    ? `http://localhost:5000/editar-subasta/${subastaId}`
-    : "http://localhost:5000/crear-subasta";
+    ? `https://subastaya-backend-v2.onrender.com/editar-subasta/${subastaId}`
+    : "https://subastaya-backend-v2.onrender.com/crear-subasta";
 
   const method = modoEdicion ? "PUT" : "POST";
 

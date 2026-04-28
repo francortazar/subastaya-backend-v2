@@ -137,7 +137,7 @@ async function cargarUsuario() {
     return;
   }
 
-  const res = await fetch("http://localhost:5000/me", {
+  const res = await fetch("https://subastaya-backend-v2.onrender.com/me", {
     headers: { Authorization: `Bearer ${token}` }
   });
 
@@ -170,7 +170,7 @@ async function cargarFavoritos() {
   if (!token) return;
 
   try {
-    const res = await fetch("http://localhost:5000/favorites", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/favorites", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -221,7 +221,7 @@ async function cargarSubastasUsuario() {
 
   const token = localStorage.getItem("token");
 
-const res = await fetch("http://localhost:5000/subastas", {
+const res = await fetch("https://subastaya-backend-v2.onrender.com/subastas", {
   headers: {
     Authorization: `Bearer ${token}`
   }
@@ -273,7 +273,7 @@ btn.addEventListener("click", async (e) => {
   const token = localStorage.getItem("token");
 
   try {
-    await fetch("http://localhost:5000/ocultar-subasta", {
+    await fetch("https://subastaya-backend-v2.onrender.com/ocultar-subasta", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -307,7 +307,7 @@ card.addEventListener("click", () => {
   try {
     const token = localStorage.getItem("token");
 
-const resBids = await fetch(`http://localhost:5000/bids?auction_id=${s.id}`, {
+const resBids = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${s.id}`, {
   headers: {
     Authorization: `Bearer ${token}`
   }
@@ -390,7 +390,7 @@ if (finalizada) continue;
   let bids = [];
 
   try {
-    const resBids = await fetch(`http://localhost:5000/bids?auction_id=${s.id}`);
+    const resBids = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${s.id}`);
     const data = await resBids.json();
     bids = Array.isArray(data) ? data : [];
   } catch {
@@ -438,7 +438,7 @@ card.addEventListener("click", () => {
 
   const token = localStorage.getItem("token");
 
-  const res = await fetch("http://localhost:5000/mis-ganadas", {
+  const res = await fetch("https://subastaya-backend-v2.onrender.com/mis-ganadas", {
     headers: {
       Authorization: `Bearer ${token}`
     }
@@ -474,7 +474,7 @@ card.addEventListener("click", () => {
       const token = localStorage.getItem("token");
 
       try {
-        await fetch("http://localhost:5000/ocultar-subasta", {
+        await fetch("https://subastaya-backend-v2.onrender.com/ocultar-subasta", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -506,7 +506,7 @@ async function cargarNotificaciones() {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch("http://localhost:5000/notificaciones", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/notificaciones", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -542,7 +542,7 @@ for (const n of notificaciones) {
   const token = localStorage.getItem("token"); // ✅ PRIMERO
 
   try {
-    await fetch("http://localhost:5000/ocultar-notificacion", {
+    await fetch("https://subastaya-backend-v2.onrender.com/ocultar-notificacion", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -578,7 +578,7 @@ for (const n of notificaciones) {
 
 async function limpiarFavoritos() {
   try {
-    await fetch("http://localhost:5000/favorites/cleanup", {
+    await fetch("https://subastaya-backend-v2.onrender.com/favorites/cleanup", {
       method: "DELETE"
     });
   } catch (err) {

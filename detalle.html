@@ -214,7 +214,7 @@ let fav = false;   // 🔥 AGREGAR
 }
 
   try {
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -252,7 +252,7 @@ async function cargarUsuario() {
   if (!token) return null;
 
   try {
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/me", {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -271,7 +271,7 @@ async function cargarUsuario() {
 async function cargarSubasta() {
   await cargarUsuario();
 
-  const res = await fetch("http://localhost:5000/subastas");
+  const res = await fetch("https://subastaya-backend-v2.onrender.com/subastas");
   const subastas = await res.json();
   const subasta = subastas.find(s => s.id == id);
   subastaActual = subasta;
@@ -423,7 +423,7 @@ async function toggleFavorito() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/favorites/toggle", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/favorites/toggle", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -453,7 +453,7 @@ async function cargarFavorito() {
   if (!token) return;
 
   try {
-    const res = await fetch(`http://localhost:5000/favorites/check?auction_id=${id}`, {
+    const res = await fetch(`https://subastaya-backend-v2.onrender.com/favorites/check?auction_id=${id}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -477,7 +477,7 @@ async function cargarPreguntas() {
   container.innerHTML = "";
 
   try {
-    const res = await fetch(`http://localhost:5000/questions?auction_id=${id}`);
+    const res = await fetch(`https://subastaya-backend-v2.onrender.com/questions?auction_id=${id}`);
     const data = await res.json();
 
     const preguntas = Array.isArray(data) ? data : [];
@@ -542,7 +542,7 @@ async function enviarPregunta() {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/questions", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/questions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -573,7 +573,7 @@ async function enviarPregunta() {
 // =========================
 async function actualizarBoton(subasta) {
 
-  const res = await fetch(`http://localhost:5000/bids?auction_id=${id}`);
+  const res = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${id}`);
 
   let bids = [];
 
@@ -615,7 +615,7 @@ async function actualizarBoton(subasta) {
     const confirmar = confirm(`¿Seguro que quieres pujar $${siguienteMonto}?`);
     if (!confirmar) return;
 
-    const res = await fetch("http://localhost:5000/pujar", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/pujar", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -648,7 +648,7 @@ async function actualizarBoton(subasta) {
 // =========================
 async function cargarHistorial() {
 
-  const res = await fetch(`http://localhost:5000/bids?auction_id=${id}`);
+  const res = await fetch(`https://subastaya-backend-v2.onrender.com/bids?auction_id=${id}`);
 
   let bids = [];
 
@@ -719,7 +719,7 @@ async function responderPregunta(questionId) {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch("http://localhost:5000/questions/answer", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/questions/answer", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -756,7 +756,7 @@ async function eliminarPregunta(questionId) {
   const token = localStorage.getItem("token");
 
   try {
-    const res = await fetch(`http://localhost:5000/questions/${questionId}`, {
+    const res = await fetch(`https://subastaya-backend-v2.onrender.com/questions/${questionId}`, {
       method: "DELETE",
       headers: {
         "Authorization": `Bearer ${token}`

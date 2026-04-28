@@ -304,7 +304,7 @@ window.onload = async () => {
   if (!token) return;
 
   try {
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("https://subastaya-backend-v2.onrender.com/me", {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -327,7 +327,7 @@ async function login() {
     password: document.getElementById("loginPassword").value
   };
 
-  const res = await fetch("http://localhost:5000/login", {
+  const res = await fetch("https://subastaya-backend-v2.onrender.com/login", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(data)
@@ -362,7 +362,7 @@ async function registrar() {
     preferencias
   };
 
-  const res = await fetch("http://localhost:5000/register", {
+  const res = await fetch("https://subastaya-backend-v2.onrender.com/register", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(data)
